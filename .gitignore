@@ -1,5 +1,14 @@
 # Virtual Environment
-/env
+env/
+
+# Cache Files
+__pycache__/
+
+# Python Bytecode
+*.pyc
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
 
 # Image Files
-/img
+img/
