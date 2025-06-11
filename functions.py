@@ -74,17 +74,12 @@ def detectFace(frame):
     )
     # Detect faces in the image
     faceGray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    faces = HaarCascade.detectMultiScale(
-        image=faceGray,
-        scaleFactor=1.1,
-        minNeighbors=5,
-        minSize=(30, 30),
-        flags=cv2.CASCADE_SCALE_IMAGE,
-    )
+    faces = HaarCascade.detectMultiScale(image=faceGray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30), flags=cv2.CASCADE_SCALE_IMAGE)
     # Return the coordinates of the detected faces
     if len(faces) > 0:
         print(f"Detected {len(faces)} face(s).")
         return faces
+    else:
         print("No faces detected.")
         return None
 
@@ -109,12 +104,12 @@ def saveFaceEmbeddings(signature, filename="signatures.json"):
     # Load face signatures from database
     data = json.load(open(filename, mode="r"))    
     # Update the database with the new signature
-    data.update({"Usuratonkachi": signature.tolist()})  # Convert numpy array to list for JSON serialization
+    data.update({"Freya": signature.tolist()})  # Convert numpy array to list for JSON serialization
     # Save the updated database to the file
     json.dump(data, open(filename, mode="w"), indent=4)
 
 # Render a rectangle around the detected faces
-def drawRectangle(x, y, width, height, frame, label="Face Detected", distance=0.0):
+def drawRectangle(x, y, width, height, frame, label="Face Detected", distance=0.0):    
     # Draw a rectangle around the detected face
     frame = cv2.rectangle(frame, (x, y), (x + width, y + height), (0, 255, 0), 1)
     frame = cv2.rectangle(frame, (x,y-40), (x+width, y), (0, 255, 0), -2)
@@ -127,20 +122,33 @@ def faceRecognition(x, y, width, height, embeddedFaces, mindistance, frame, file
     # Load the face database
     faceDatabase = json.load(open(filename, mode="r"))
     
+    # Initialize lists to store identities and distances
+    identities, distances = [], []
+    
     # Iterate through the face database
-    for identity, signature in faceDatabase.items():     
+    for identity, signature in faceDatabase.items():
         # Calculate the Euclidean distance between the embedded faces and the stored signatures
         distance = np.linalg.norm(signature - embeddedFaces)
         
-        # Print the identity and distance for debugging
-        print("Identifing faces...")
-        print(f"Identity: {identity}, Distance: {distance}\n")
+        # Append the identity and distance to the lists
+        identities.append(identity)
+        distances.append(distance)
+        
+    # Find the index of the minimum distance
+    min_index = np.argmin(distances)
+    # Get the identity and distance of the closest match
+    identity = identities[min_index]
+    distance = distances[min_index]
+        
+    # Print the identity and distance for debugging
+    print("Identifing faces...")
+    print(f"Identity: {identity}, Distance: {distance}\n")
 
-        # Render the rectangle with the label and distance
-        if distance > mindistance:
-            print("Failed to recognize the face.")
-            drawRectangle(x=x, y=y, width=width, height=height, frame=frame, label="Unknown", distance=distance)
-            if cv2.waitKey(1) & 0xFF == ord('n'):
-                print("Dummy action triggered by pressing 'n'.")
-        else:
-            drawRectangle(x=x, y=y, width=width, height=height, frame=frame, label=identity, distance=distance)
+    # Render the rectangle with the label and distance
+    if distance > mindistance:
+        print("Failed to recognize the face.")
+        drawRectangle(x=x, y=y, width=width, height=height, frame=frame, label="Unknown", isKnown=False, distance=distance)
+        # extractFaceEmbeddings(face=frame[y:y+height, x:x+width], frame=frame)
+        # saveFaceEmbeddings(signature=embeddedFaces, filename=filename)
+    else:
+        drawRectangle(x=x, y=y, width=width, height=height, frame=frame, label=identity, isKnown=True, distance=distance)
